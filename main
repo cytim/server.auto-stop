@@ -1,0 +1,24 @@
+#!/bin/bash
+
+now=$(date '+%s')
+script_path=$(dirname $(realpath "$0"))
+
+registry=${script_path}/data/last_ssh_conn
+timeout=3600
+
+ssh_conn=$(netstat | grep ':ssh' | grep 'ESTABLISHED' | wc -l)
+if [ "$ssh_conn" -gt 0 ]; then
+  rm -f "$registry"
+else
+  if [ -f "$registry" ]; then
+    last_ssh_conn=$(date -r "$registry" '+%s')
+    duration=$((now - last_ssh_conn))
+    if [ "$duration" -gt "$timeout" ]; then
+      rm -f "$registry"
+      /usr/sbin/shutdown now "The server has been inactive for ${duration}s (timeout=${timeout}s)"
+    fi
+  else
+    touch "$registry"
+  fi
+fi
+
